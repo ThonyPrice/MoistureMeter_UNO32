@@ -1,9 +1,15 @@
 /* mipslabwork.c
-   This file written 2015 by F Lundevall
-   This file should be changed by YOU! So add something here:
-   This file modified 2015-12-24 by Ture Teknolog 
-   Latest update 2015-08-28 by F Lundevall
-   For copyright and licensing, see file COPYING */
+   Original file written 2015 by F Lundevall
+   Modified by Thony Price for course IS1500, KTH 
+   Last revision: 2016-11-25          
+
+   Current to do:
+   
+    Read analog input from moisture sensor at port A1 by;
+        Set the corresponding bits in the AD1PCFG register = 0
+        Set the corresponding TRIS bit = 1 (input). 
+
+*/
 
 #include <stdint.h>   /* Declarations of uint_32 and the like */
 #include <pic32mx.h>  /* Declarations of system-specific addresses etc */
@@ -14,12 +20,12 @@
 #endif
 int timeoutcount = 0;
 
-int prime = 1234567;
+// This code will no longer be used(?)
 int mytime = 0x5957;
 volatile int* myTRISE;
 volatile int* myPORTE;
-
-char textstring[] = "text, more text, and even more text!";
+// Declare variable where which later should refer to an adress
+volatile int* add;
 
 /* Interrupt Service Routine */
 void user_isr( void ) {
@@ -52,10 +58,10 @@ void user_isr( void ) {
     
     (timeoutcount)++;
     if (timeoutcount == 10){
-      time2string( textstring, mytime );
-      display_string( 3, textstring );
+      // time2string( textstring, mytime );
+      // display_string( 3, textstring );
       display_update();
-      display_image(96, icon);
+      // display_image(96, icon);
       tick( &mytime );
       timeoutcount = 0;
     }
@@ -67,9 +73,13 @@ void user_isr( void ) {
   }
 }
 
-/* Lab-specific initialization goes here */
+/* Initialize */
 void labinit( void )
 {
+  AD1PCFG &= 0x0000;         // Enable all analog inputs
+  TRISA   |= 2;              // Set A0 as input instead of output (default)
+  PORTA  &= 0xffffffff;     // Set 
+   
   myTRISE   = (volatile int*) 0xbf886100;
   myPORTE   = (volatile int*) 0xbf886110;
   *myTRISE &= ~0x00;
@@ -93,16 +103,17 @@ void labinit( void )
 }
 
 /* This function is called repetitively from the main program */
-void labwork( void ) {
-  
+void labwork( void ) {  
+  add = (volatile int*) 0xbf809080;
+  display_debug(add);          // Display what's read at A0
   int foo = getsw();
   foo &= 0b0001;
   if (getsw() == 1){
     IFS(1) = 1;               
   }
   
-  prime = nextprime( prime );
-  display_string( 0, itoaconv( prime ) );
-  display_update();
-  display_image(96, icon);
+  // prime = nextprime( prime );
+  // display_string( 0, itoaconv( prime ) );
+  // display_update();
+  // display_image(96, icon);
 }
