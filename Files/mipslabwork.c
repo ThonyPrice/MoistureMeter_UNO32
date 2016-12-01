@@ -29,6 +29,7 @@ volatile int* add;
 
 /* Interrupt Service Routine */
 void user_isr( void ) {
+  
   // check which flag's up
   int t2_flag   = IFS(0) & 256; // Get status of T2 flag
   int int1_flag = IFS(0) & 128; // Get status of INT1 flag  
@@ -60,8 +61,10 @@ void user_isr( void ) {
     if (timeoutcount == 10){
       // time2string( textstring, mytime );
       // display_string( 3, textstring );
-      display_update();
-      // display_image(96, icon);
+      // display_update();
+      add = (volatile int*) 0xbf809070;
+      display_debug(add);          // Display what's read at A0
+      display_image(96, icon);
       tick( &mytime );
       timeoutcount = 0;
     }
@@ -78,11 +81,14 @@ void labinit( void )
 { 
   AD1PCFG = 0x0000;           // Enable all analog inputs
   AD1CHS  |= 0x01010000;      // Set A1 to analog MUX' in CH0SB and CH0SA 
-  AD1CON1 |= 0x00000100;      // Chose output format as 16 bit signed integer
+  AD1CON1 |= 0x00000200;      // Chose output format as 16 bit signed integer
   AD1CON1 |= 0x000000e0;      // Chose auto-convert for SSRC
-  AD1CON3 |= 0x00000f00;      // Rate of auto-convert SAMC, 15 TAD
+  AD1CON3 |= 0x00000300;      // Rate of auto-convert SAMC, 15 TAD
+  AD1CON3 |= 0x00008000;      // Set internal clock, ADRC, as RC ocilator clock
+  AD1CON3 |= 0x0000000f;      // Set aquisiton period
   
   AD1CON1 |= 0x00008000;      // Turn on the ADC
+  AD1CON1 |= 0x00000004;      // Enable auto sampling
   
   // AD1CHS  |= 0x00030000;    // Choose A1 for analog to digital conversion(?)
   // myTRISA = (volatile int*) 0xbf886000;
@@ -114,8 +120,8 @@ void labinit( void )
 
 /* This function is called repetitively from the main program */
 void labwork( void ) {  
-  add = (volatile int*) 0xbf809080;
-  display_debug(add);          // Display what's read at A0
+  // add = (volatile int*) 0xbf809070;
+  // display_debug(add);          // Display what's read at A0
   int foo = getsw();
   foo &= 0b0001;
   if (getsw() == 1){
