@@ -75,10 +75,20 @@ void user_isr( void ) {
 
 /* Initialize */
 void labinit( void )
-{
-  AD1PCFG &= 0x0000;         // Enable all analog inputs
-  TRISA   |= 2;              // Set A0 as input instead of output (default)
-  PORTA  &= 0xffffffff;     // Set 
+{ 
+  AD1PCFG = 0x0000;           // Enable all analog inputs
+  AD1CHS  |= 0x01010000;      // Set A1 to analog MUX' in CH0SB and CH0SA 
+  AD1CON1 |= 0x00000100;      // Chose output format as 16 bit signed integer
+  AD1CON1 |= 0x000000e0;      // Chose auto-convert for SSRC
+  AD1CON3 |= 0x00000f00;      // Rate of auto-convert SAMC, 15 TAD
+  
+  AD1CON1 |= 0x00008000;      // Turn on the ADC
+  
+  // AD1CHS  |= 0x00030000;    // Choose A1 for analog to digital conversion(?)
+  // myTRISA = (volatile int*) 0xbf886000;
+  // *myTRISA |= 0x2;
+  TRISA   |= 0x00000002;             // Set A1 as input instead of output (default)
+  // PORTA  &= 0xffffffff;     // Set 
    
   myTRISE   = (volatile int*) 0xbf886100;
   myPORTE   = (volatile int*) 0xbf886110;
