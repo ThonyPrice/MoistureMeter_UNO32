@@ -87,16 +87,16 @@ void labinit( void )
   AD1CHSSET = 0x00040000;       // Set A2 to positive analog input in MUX' for CH0SB and CH0SA 
   AD1CON1CLR= 0x00000700;       // Set output format as 16 bit integer
   AD1CON1SET= 0x000000e0;       // Chose auto-convert for SSRC
-  AD1CON3SET= 0x00000c00;       // Rate of auto-convert SAMC, 12 TAD <- Increase?
-  // AD1CON3SET= 0x00000300;       // Rate of auto-convert SAMC, 3 TAD 
+  // AD1CON3SET= 0x00000c00;       // Rate of auto-convert SAMC, 12 TAD <- Increase?
+  AD1CON3SET= 0x00000300;       // Rate of auto-convert SAMC, 3 TAD 
   AD1CHSCLR = 0x00800000;       // Make sure scanning mode is off (read multiple pins)
   AD1CON2CLR= 0x0000003c;       // Set SMPI-bits to 0 -> All ADC convertions writes to BUF0
                                 // Also sets convertions per interrupt to 1
   AD1CON2CLR= 0x00000001;       // Clr ALTS bit i.e. only one input source
   AD1CON3SET= 0x00008000;       // Set internal clock, ADRC, as RC ocilator clock <- Change?
-  // AD1CON3CLR= 0x00008000;       // Set internal clock, ADRC, as PBCLK
-  // AD1CON3SET= 0x00000002;       // Set ADCS to 2
-  AD1CON3 |= 0x0000000f;      // Set aquisiton period
+  AD1CON3CLR= 0x00008000;       // Set internal clock, ADRC, as PBCLK
+  AD1CON3SET= 0x00000002;       // Set ADCS to 2
+  // AD1CON3SER= 0x0000000f;      // Set aquisiton period
   
   AD1CON1SET= 0x00008000;       // Turn on the ADC
   AD1CON1SET= 0x00000004;       // Enable auto sampling
