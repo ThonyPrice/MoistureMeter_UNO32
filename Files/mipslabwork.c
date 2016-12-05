@@ -24,6 +24,7 @@ int timeoutcount = 0;
 int mytime = 0x5957;
 volatile int* myTRISE;
 volatile int* myPORTE;
+volatile int* myTRISA;
 // Declare variable where which later should refer to an adress
 volatile int* add;
 
@@ -64,7 +65,7 @@ void user_isr( void ) {
       // display_update();
       add = (volatile int*) 0xbf809070;
       display_debug(add);          // Display what's read at A0
-      display_image(96, icon);
+      // display_image(96, icon);
       tick( &mytime );
       timeoutcount = 0;
     }
@@ -79,21 +80,31 @@ void user_isr( void ) {
 /* Initialize */
 void labinit( void )
 { 
-  AD1PCFG = 0x0000;           // Enable all analog inputs
-  AD1CHS  |= 0x01010000;      // Set A1 to analog MUX' in CH0SB and CH0SA 
-  AD1CON1 |= 0x00000200;      // Chose output format as 16 bit signed integer
-  AD1CON1 |= 0x000000e0;      // Chose auto-convert for SSRC
-  AD1CON3 |= 0x00000300;      // Rate of auto-convert SAMC, 15 TAD
-  AD1CON3 |= 0x00008000;      // Set internal clock, ADRC, as RC ocilator clock
+  AD1CON1CLR= 0x00008000;       // Turn off the ADC before operating on it
+  AD1PCFG   = 0x0000;           // Enable all analog inputs
+  TRISASET  = 4;                // Set coresponding TRISbit (A2)
+
+  AD1CHSSET = 0x00040000;       // Set A2 to positive analog input in MUX' for CH0SB and CH0SA 
+  AD1CON1CLR= 0x00000700;       // Set output format as 16 bit integer
+  AD1CON1SET= 0x000000e0;       // Chose auto-convert for SSRC
+  AD1CON3SET= 0x00000c00;       // Rate of auto-convert SAMC, 12 TAD <- Increase?
+  // AD1CON3SET= 0x00000300;       // Rate of auto-convert SAMC, 3 TAD 
+  AD1CHSCLR = 0x00800000;       // Make sure scanning mode is off (read multiple pins)
+  AD1CON2CLR= 0x0000003c;       // Set SMPI-bits to 0 -> All ADC convertions writes to BUF0
+                                // Also sets convertions per interrupt to 1
+  AD1CON2CLR= 0x00000001;       // Clr ALTS bit i.e. only one input source
+  AD1CON3SET= 0x00008000;       // Set internal clock, ADRC, as RC ocilator clock <- Change?
+  // AD1CON3CLR= 0x00008000;       // Set internal clock, ADRC, as PBCLK
+  // AD1CON3SET= 0x00000002;       // Set ADCS to 2
   AD1CON3 |= 0x0000000f;      // Set aquisiton period
   
-  AD1CON1 |= 0x00008000;      // Turn on the ADC
-  AD1CON1 |= 0x00000004;      // Enable auto sampling
+  AD1CON1SET= 0x00008000;       // Turn on the ADC
+  AD1CON1SET= 0x00000004;       // Enable auto sampling
   
   // AD1CHS  |= 0x00030000;    // Choose A1 for analog to digital conversion(?)
   // myTRISA = (volatile int*) 0xbf886000;
   // *myTRISA |= 0x2;
-  TRISA   |= 0x00000002;             // Set A1 as input instead of output (default)
+  // TRISASET = 2;             // Set A1 as input instead of output (default)
   // PORTA  &= 0xffffffff;     // Set 
    
   myTRISE   = (volatile int*) 0xbf886100;

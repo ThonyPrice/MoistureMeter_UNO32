@@ -3,7 +3,7 @@
    This file written 2015 by Axel Isaksson,
    modified 2015 by F Lundevall
 
-   Latest update 2015-08-28 by F Lundevall
+   Latest update 2019-12-05 by Thony Price
 
    For copyright and licensing, see file COPYING */
 
@@ -18,7 +18,8 @@ int main(void) {
 	OSCCONSET = 0x080000; /* set PBDIV bit 0 */
 	
 	/* Set up output pins */
-	AD1PCFG = 0xFFFF;
+	// AD1PCFG = 0xFFFF;				// Commented out: 	These will be used as 
+															//									analog input pins
 	ODCE = 0x0;
 	TRISECLR = 0xFF;
 	PORTE = 0x0;
@@ -48,10 +49,10 @@ int main(void) {
 	SPI2CONSET = 0x8000;
 	
 	display_init();
-	display_string(0, "KTH/ICT lab");
-	display_string(1, "in Computer");
+	display_string(0, "Thony Price:");
+	display_string(1, "Computer");
 	display_string(2, "Engineering");
-	display_string(3, "Welcome!");
+	display_string(3, "KTH Mini Project");
 	display_update();
 	
 	display_image(96, icon);
