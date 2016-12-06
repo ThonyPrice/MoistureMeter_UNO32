@@ -5,6 +5,8 @@
 
 */
 
+/* Include libraris and define global variables */
+
 #include <stdint.h>   /* Declarations of uint_32 and the like */
 #include <pic32mx.h>  /* Declarations of system-specific addresses etc */
 #include "mipslab.h"  /* Declatations for these labs */
@@ -12,27 +14,34 @@
 #if TMR2PERIOD > 0xffff                     // Fail-safe TMR2PERIOD size
 #error "Timer period is too big."
 #endif
+
 int mytime = 0x5957;  // Delete?
 int timeoutcount = 0; // Counter it interrupt timeouts 
-volatile int* add;    // Declare variable which refers to adress
-int* value;           // [Text]
-int plantMode = 1;    // Operate between plants
+int plantMode = 2;    // Operate between plants -> Preset Flower mode
+int leds = 0;         // Initial value of LEDs
+int waterVal = 224;   // Value of sensor measurement in water
+
+volatile int* address = 0xbf809070;         // Pointer to value in register
+                                            // ADC1BUF0 with A1 Read
+                                            
+char* kaktus = "> Kaktus mode";             // String for displaying mode
+char* flower = "> Flower mode";             // String for displaying mode
+char* no_val = "> No measurement";          // String for displaying mode
 
 /* Interrupt Service Routine */
 void user_isr( void ) {
   
-  add = (volatile int*) 0xbf809070;
-  display_debug(add);          // Display what's read at A0
-  value = *add;
-  
-  if (value > 260){
-    PORTE = 3;
-  }
-  if (value < 260){
+  display_debug(address);                   // Display analog input from A1 
+
+  int value = *address;                     // Extract value from address
+  if (value > waterVal){                    // Invalid -> Prompt no measurement
     PORTE = 0;
+    display_string(0, no_val);
+  } if (value < waterVal){                  // Valid -> Convert val to leds
+    PORTE = getLeds(value, waterVal, plantMode);
   }
   
-  // check which flag's up
+  // Check which flag is up
   int t2_flag   = IFS(0) & 256; // Get status of T2 flag
   int int1_flag = IFS(0) & 128; // Get status of INT1 flag  
   
@@ -40,56 +49,23 @@ void user_isr( void ) {
     IFS(0) ^= 256;         
     int btns  = getbtns();
     if (btns == 4) {
-        char* s;
-        s = "> Kaktus mode";
-        display_string(0, s);
+        plantMode = 1;
+        display_string(0, kaktus);
     }
     if (btns == 2) {
-        char* s;
-        s = "> Flower mode";
-        display_string(0, s);
+        plantMode = 2;
+        display_string(0, flower);
     }
-    
-  // if (t2_flag == 256){         <-- Old code changing time according to btns
-  //   IFS(0) ^= 256;                 and switches at every interrupt
-  //   int btns  = getbtns();
-  //   if (btns != 0) {
-  //       int sw = getsw();
-  //           
-  //       if (btns == 1){
-  //         mytime &= 0xff0f;
-  //         int bitmask = (sw << 4);
-  //         mytime |= bitmask;
-  //       }
-  //       if (btns == 2){
-  //         mytime &= 0xf0ff;
-  //         int bitmask = (sw << 8);
-  //         mytime |= bitmask;
-  //       }
-  //       if (btns == 4){
-  //         mytime &= 0x0fff;
-  //         int bitmask = (sw << 12);
-  //         mytime |= bitmask;
-  //       }
-  //   }
     
     (timeoutcount)++;
     if (timeoutcount == 10){
-      // time2string( textstring, mytime );
-      // display_string( 3, textstring );
-      // display_update();
-
-      // display_image(96, icon);
-      tick( &mytime );
+      // Code to execute every second
       timeoutcount = 0;
     }
   }
   
-  if (int1_flag == 128){ // If swith interrupt flag is up
-    // PORTE++;
-    IFS(0) ^= 128;
-  }
 }
+
 
 /* Initialize */
 void labinit( void )
@@ -138,9 +114,4 @@ void labwork( void ) {
   if (getsw() == 1){
     IFS(1) = 1;               
   }
-  
-  // prime = nextprime( prime );
-  // display_string( 0, itoaconv( prime ) );
-  // display_update();
-  // display_image(96, icon);
 }
