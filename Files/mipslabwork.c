@@ -16,6 +16,7 @@ int mytime = 0x5957;  // Delete?
 int timeoutcount = 0; // Counter it interrupt timeouts 
 volatile int* add;    // Declare variable which refers to adress
 int* value;           // [Text]
+int plantMode = 1;    // Operate between plants
 
 /* Interrupt Service Routine */
 void user_isr( void ) {
@@ -30,6 +31,7 @@ void user_isr( void ) {
   if (value < 260){
     PORTE = 0;
   }
+  
   // check which flag's up
   int t2_flag   = IFS(0) & 256; // Get status of T2 flag
   int int1_flag = IFS(0) & 128; // Get status of INT1 flag  
@@ -37,25 +39,39 @@ void user_isr( void ) {
   if (t2_flag == 256){ 
     IFS(0) ^= 256;         
     int btns  = getbtns();
-    if (btns != 0) {
-        int sw = getsw();
-            
-        if (btns == 1){
-          mytime &= 0xff0f;
-          int bitmask = (sw << 4);
-          mytime |= bitmask;
-        }
-        if (btns == 2){
-          mytime &= 0xf0ff;
-          int bitmask = (sw << 8);
-          mytime |= bitmask;
-        }
-        if (btns == 4){
-          mytime &= 0x0fff;
-          int bitmask = (sw << 12);
-          mytime |= bitmask;
-        }
+    if (btns == 4) {
+        char* s;
+        s = "> Kaktus mode";
+        display_string(0, s);
     }
+    if (btns == 2) {
+        char* s;
+        s = "> Flower mode";
+        display_string(0, s);
+    }
+    
+  // if (t2_flag == 256){         <-- Old code changing time according to btns
+  //   IFS(0) ^= 256;                 and switches at every interrupt
+  //   int btns  = getbtns();
+  //   if (btns != 0) {
+  //       int sw = getsw();
+  //           
+  //       if (btns == 1){
+  //         mytime &= 0xff0f;
+  //         int bitmask = (sw << 4);
+  //         mytime |= bitmask;
+  //       }
+  //       if (btns == 2){
+  //         mytime &= 0xf0ff;
+  //         int bitmask = (sw << 8);
+  //         mytime |= bitmask;
+  //       }
+  //       if (btns == 4){
+  //         mytime &= 0x0fff;
+  //         int bitmask = (sw << 12);
+  //         mytime |= bitmask;
+  //       }
+  //   }
     
     (timeoutcount)++;
     if (timeoutcount == 10){
@@ -69,7 +85,7 @@ void user_isr( void ) {
     }
   }
   
-  if (int1_flag == 128){
+  if (int1_flag == 128){ // If swith interrupt flag is up
     // PORTE++;
     IFS(0) ^= 128;
   }
