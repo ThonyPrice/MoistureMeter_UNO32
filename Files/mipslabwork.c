@@ -33,13 +33,8 @@ void user_isr( void ) {
   address = (volatile int*) 0xbf809070;     // Reg. ADC1BUF0 (A1 Read)
   display_debug(address);                   // Display analog input from A1 
   int value = *address;                     // Extract value from address
-  
-  
-  // char* sensor = value; 
-  char buffer[10];
-  snprintf(buffer, 10, "%d", value);
-  // char* sensor = "Value: ";     
-  display_string(3, buffer);                // Display current value
+  char* str = itoaconv(value); 
+  display_string(3, str);                   // Display current value
   
   
   if (value > waterVal){                    // Invalid -> Prompt no measurement
