@@ -23,7 +23,9 @@ int getLeds(int value, int waterVal, int plantMode){
   if (plantMode == 1){
     prop = prop * 1.5;
   }
-  
+  if (value > 200){   // CHANGE THIS TO RATIO
+    IFS(1) = 1;
+  }
   if (prop > ((float)7/(float)8)){     
     return 255; }
   if (prop <= ((float)7/(float)8) && prop > ((float)6/(float)8)){

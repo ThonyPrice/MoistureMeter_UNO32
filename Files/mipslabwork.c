@@ -5,12 +5,11 @@
 
 */
 
-/* Include libraries and define global variables */
+/***** Include and define *****/
 
 #include <stdint.h>   /* Declarations of uint_32 and the like */
 #include <pic32mx.h>  /* Declarations of system-specific addresses etc */
 #include "mipslab.h"  /* Declatations for these labs */
-#define snprintf
 #define TMR2PERIOD ((80000000 / 256) / 10)  // Set time-out-period to 10 ms
 #if TMR2PERIOD > 0xffff                     // Fail-safe TMR2PERIOD size
 #error "Timer period is too big."
@@ -19,58 +18,56 @@
 int timeoutcount = 0; // Counter it interrupt timeouts 
 int plantMode = 2;    // Operate between plants -> Preset Flower mode
 int leds = 0;         // Initial value of LEDs
-int waterVal = 224;   // Value of sensor measurement in water
+int inAirVal = 745;   // Value of sensor measurement in air
+int waterVal = 105;   // Value of sensor measurement in water
 
 volatile int* address;                      // Pointer to value in register
                                             
 char* kaktus = "> Kaktus mode";             // String for displaying mode
 char* flower = "> Flower mode";             // String for displaying mode
 char* no_val = "> No measurement";          // String for displaying mode
+char* tooDry = "> I'm thirsty!";            // String for displaying mode
 
-/* Interrupt Service Routine */
-void user_isr( void ) {
-  
-  address = (volatile int*) 0xbf809070;     // Reg. ADC1BUF0 (A1 Read)
-  display_debug(address);                   // Display analog input from A1 
-  int value = *address;                     // Extract value from address
-  char* str = itoaconv(value); 
-  display_string(3, str);                   // Display current value
-  
-  
-  if (value > waterVal){                    // Invalid -> Prompt no measurement
+/***** Verify and process sensor value *****/
+
+void verifyValue(int value){
+  if (value < waterVal){                    // Invalid -> Prompt no measurement
     PORTE = 0;
-    display_string(0, no_val);
+    display_string(1, no_val);
   } if (value < waterVal){                  // Valid -> Convert val to leds
     PORTE = getLeds(value, waterVal, plantMode);
-  }
-  
-  // Check which flag is up
-  int t2_flag   = IFS(0) & 256;             // Get status of T2 flag
-  int int1_flag = IFS(0) & 128;             // Get status of INT1 flag  
-  
-  if (t2_flag == 256){ 
-    IFS(0) ^= 256;         
-    int btns  = getbtns();
-    if (btns == 4) {
-        plantMode = 1;
-        display_string(0, kaktus);
-    }
-    if (btns == 2) {
-        plantMode = 2;
-        display_string(0, flower);
-    }
-    
-    (timeoutcount)++;
-    if (timeoutcount == 10){
-      // Code to execute every second
-      timeoutcount = 0;
-    }
-  }
-  
+  }            
 }
 
+/***** Interrupt Service Routine *****/
 
-/* Initialize */
+void user_isr( void ) {
+
+  address   = (volatile int*) 0xbf809070;   // Reg. ADC1BUF0 (A1 Read)
+  // display_debug(address);                // Display analog input from A1 
+  int value = *address;                     // Extract value from address
+  char* strVal = itoaconv(value);           // Convert value to string
+  display_string(3, strVal);                // Display current value
+  verifyValue(value);                       // Handle value of sensor
+  display_update();                     
+  
+  // Check which flag is up
+  int t2_flag   = IFS(0) & 256;             // Get status of T2 flag  
+  int int1_flag = IFS(0) & 128;             // Get status of INT1 flag
+  if (t2_flag == 256){                      // If TMR flas is up
+    IFS(0) ^= 256;                          // Clear TMR flag
+  }
+  if (int1_flag == 128){                    // If SW flag is up    
+      display_string(0, tooDry);            // Prompt plant is too dry
+      if (value < 200){
+        IFS(0) ^= 128;                      // Clear SW flag
+        display_string(0, "~*Flowerpower*~");// Show default msg
+      }
+    }
+}
+
+/***** Initialize *****/
+
 void labinit( void )
 { 
                                 // Initialize ADC
@@ -109,12 +106,18 @@ void labinit( void )
 
 }
 
-/* This function is called repetitively from the main program */
-void labwork( void ) {  
+/***** Repetitively called from the main program *****/
+
+void labwork( void ) {
   
-  int foo = getsw();
-  foo &= 0b0001;
-  if (getsw() == 1){
-    IFS(1) = 1;               
+  int btns  = getbtns();
+  if (btns == 4) {
+      plantMode = 1;
+      display_string(1, kaktus);
   }
+  if (btns == 2) {
+      plantMode = 2;
+      display_string(1, flower);
+  }
+  
 }
