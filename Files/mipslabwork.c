@@ -17,16 +17,16 @@
 
 int timeoutcount = 0; // Counter it interrupt timeouts 
 int plantMode = 2;    // Operate between plants -> Preset Flower mode
-int leds = 0;         // Initial value of LEDs
+int leds;             // Initial value of LEDs
 int inAirVal = 745;   // Value of sensor measurement in air
-int waterVal = 105;   // Value of sensor measurement in water
+int waterVal = 200;   // Value of sensor measurement in water
 
 volatile int* address;                      // Pointer to value in register
                                             
-char* kaktus = "> Kaktus mode";             // String for displaying mode
-char* flower = "> Flower mode";             // String for displaying mode
-char* no_val = "> No measurement";          // String for displaying mode
-char* tooDry = "> I'm thirsty!";            // String for displaying mode
+char* kaktus = "> Kaktus mode";             // String for display
+char* flower = "> Flower mode";             // String for display
+char* no_val = "> No measurement";          // String for display
+char* tooDry = "> I'm thirsty!";            // String for display
 
 /***** Verify and process sensor value *****/
 
@@ -34,9 +34,9 @@ void verifyValue(int value){
   if (value < waterVal){                    // Invalid -> Prompt no measurement
     PORTE = 0;
     display_string(1, no_val);
-  } if (value < waterVal){                  // Valid -> Convert val to leds
-    PORTE = getLeds(value, waterVal, plantMode);
-  }            
+  } if (value > waterVal){                  // Valid -> Convert val to leds
+    PORTE = getLeds(value, inAirVal, waterVal, plantMode);
+  }                                         // getLeds located in time4io file
 }
 
 /***** Interrupt Service Routine *****/
@@ -55,15 +55,23 @@ void user_isr( void ) {
   int t2_flag   = IFS(0) & 256;             // Get status of T2 flag  
   int int1_flag = IFS(0) & 128;             // Get status of INT1 flag
   if (t2_flag == 256){                      // If TMR flas is up
-    IFS(0) ^= 256;                          // Clear TMR flag
+      IFS(0) ^= 256;                        // Clear TMR flag
+      if (IFS(0) ^= 128){                   // If other flag raised too
+          timeoutcount++;                   // Increase counter
+          if (timeoutcount == 3){           
+              timeoutcount = 0;         
+              PORTE = 0;                    // This makes LEDs "blink"
+      }                                     // When their value is low
+    }
   }
   if (int1_flag == 128){                    // If SW flag is up    
-      display_string(0, tooDry);            // Prompt plant is too dry
-      if (value < 200){
+      display_string(0, tooDry);            // Prompt plant's too dry
+      if (getLeds(value, inAirVal, waterVal, plantMode) > 3){
         IFS(0) ^= 128;                      // Clear SW flag
-        display_string(0, "~*Flowerpower*~");// Show default msg
+        timeoutcount = 0;                   
+        display_string(0, "~*Flowerpower*~");
       }
-    }
+  }
 }
 
 /***** Initialize *****/
@@ -110,9 +118,9 @@ void labinit( void )
 
 void labwork( void ) {
   
-  int btns  = getbtns();
-  if (btns == 4) {
-      plantMode = 1;
+  int btns  = getbtns();        // getbtns located in time4io
+  if (btns == 4) {              // Depending on which button is pressed 
+      plantMode = 1;            // user sets plantMode
       display_string(1, kaktus);
   }
   if (btns == 2) {
