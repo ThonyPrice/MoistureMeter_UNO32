@@ -1,28 +1,27 @@
 /* mipslabwork.c
    Original file written 2015 by F Lundevall
    Modified by Thony Price for course IS1500, KTH 
-   Last revision: 2016-12-06          
+   Last revision: 2016-12-07          
 
 */
 
-/* Include libraris and define global variables */
+/* Include libraries and define global variables */
 
 #include <stdint.h>   /* Declarations of uint_32 and the like */
 #include <pic32mx.h>  /* Declarations of system-specific addresses etc */
 #include "mipslab.h"  /* Declatations for these labs */
+#define snprintf
 #define TMR2PERIOD ((80000000 / 256) / 10)  // Set time-out-period to 10 ms
 #if TMR2PERIOD > 0xffff                     // Fail-safe TMR2PERIOD size
 #error "Timer period is too big."
 #endif
 
-int mytime = 0x5957;  // Delete?
 int timeoutcount = 0; // Counter it interrupt timeouts 
 int plantMode = 2;    // Operate between plants -> Preset Flower mode
 int leds = 0;         // Initial value of LEDs
 int waterVal = 224;   // Value of sensor measurement in water
 
-volatile int* address = 0xbf809070;         // Pointer to value in register
-                                            // ADC1BUF0 with A1 Read
+volatile int* address;                      // Pointer to value in register
                                             
 char* kaktus = "> Kaktus mode";             // String for displaying mode
 char* flower = "> Flower mode";             // String for displaying mode
@@ -31,9 +30,18 @@ char* no_val = "> No measurement";          // String for displaying mode
 /* Interrupt Service Routine */
 void user_isr( void ) {
   
+  address = (volatile int*) 0xbf809070;     // Reg. ADC1BUF0 (A1 Read)
   display_debug(address);                   // Display analog input from A1 
-
   int value = *address;                     // Extract value from address
+  
+  
+  // char* sensor = value; 
+  char buffer[10];
+  snprintf(buffer, 10, "%d", value);
+  // char* sensor = "Value: ";     
+  display_string(3, buffer);                // Display current value
+  
+  
   if (value > waterVal){                    // Invalid -> Prompt no measurement
     PORTE = 0;
     display_string(0, no_val);
@@ -42,8 +50,8 @@ void user_isr( void ) {
   }
   
   // Check which flag is up
-  int t2_flag   = IFS(0) & 256; // Get status of T2 flag
-  int int1_flag = IFS(0) & 128; // Get status of INT1 flag  
+  int t2_flag   = IFS(0) & 256;             // Get status of T2 flag
+  int int1_flag = IFS(0) & 128;             // Get status of INT1 flag  
   
   if (t2_flag == 256){ 
     IFS(0) ^= 256;         
